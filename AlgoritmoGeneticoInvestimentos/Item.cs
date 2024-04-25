@@ -9,8 +9,8 @@
         public Item(string nome, int peso, int valor)
         {
             Nome = nome;
-            Peso = peso;
-            Valor = valor;
+            Peso = peso;  
+            Valor = valor; //Importancia 
         }
     }
 
