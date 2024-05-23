@@ -1,14 +1,20 @@
-﻿partial class Program
+﻿using System.Drawing;
+using System.Text;
+
+partial class Program
 {
+    //O problema da mochila envolve selecionar um conjunto de itens com valores e pesos diferentes para maximizar o valor total, 
+    //sem exceder a capacidade de peso da mochila.
+
     static Random random = new Random();
     static int tamanhoPopulacao = 10;
-    static int geracaoLimite = 30;
-    static int capacidadeMochila = 300;
-    static double taxaMutacao = 0.01;
-    static int elitismoContagem = 2;
+    static int geracaoLimite = 100;
+    static int capacidadeMochila = 120;
+    static int elitismoContagem = 1;
 
     static List<Item> items = new List<Item>()
     {
+        //peso,valor
         new Item("Agenda", 40, 20),
         new Item("Notebook", 200, 30),
         new Item("Penal", 20, 25),
@@ -71,29 +77,10 @@
             Cromossomo melhorIndividuo = populacao.OrderByDescending(c => c.Compatibilidade).First();
             string itensEscolhidos = ObterItensEscolhidos(melhorIndividuo);
 
-            if (melhorIndividuo.Compatibilidade == 0)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("{0,-10} {1,-10} {2}", "|" + (geracao + 1) + "|", "|" + "Excedeu" + "|", "|" + itensEscolhidos + "|");
-                Console.ResetColor();
-            }
-            else
-            {
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.WriteLine("{0,-10} {1,-10} {2}", "|" + (geracao + 1) + "|", "|" + melhorIndividuo.Compatibilidade + "|", "|" + itensEscolhidos + "|");
-                Console.ResetColor();
-            }
+            PrintGeracoes(geracao, melhorIndividuo, itensEscolhidos);
         }
     }
 
-    private static void MostrarCabecalho()
-    {
-        Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine("------------------------------------------------------------------------------------------------------");
-        Console.WriteLine("{0,-10} {1,-10} {2}", "|Geração|", "|Valor|", "|Itens|");
-        Console.WriteLine("------------------------------------------------------------------------------------------------------");
-        Console.ResetColor();
-    }
 
     static List<Cromossomo> IniciarPopulacao()
     {
@@ -108,7 +95,6 @@
 
         return population;
     }
-
     static List<bool> IniciarGenes()
     {
         List<bool> genes = new List<bool>();
@@ -120,7 +106,6 @@
 
         return genes;
     }
-
     static void Validar(Cromossomo cromossomo)
     {
         int pesoTotal = 0;
@@ -145,10 +130,9 @@
             cromossomo.Compatibilidade = valorTotal;
         }
     }
-
     static List<Cromossomo> Cruzamento(Cromossomo pai1, Cromossomo pai2)
     {
-        int pontoCorte = random.Next(pai1.Genes.Count);
+        int pontoCorte = random.Next(pai1.Genes.Count); //ponto de corte do Cruzamento
 
         List<bool> genesFilho1 = new List<bool>();
         List<bool> genesFilho2 = new List<bool>();
@@ -172,7 +156,6 @@
 
         return new List<Cromossomo> { filho1, filho2 };
     }
-
     static string ObterItensEscolhidos(Cromossomo cromossomo)
     {
         List<string> itensEscolhidos = new List<string>();
@@ -185,4 +168,31 @@
         }
         return string.Join(", ", itensEscolhidos);
     }
+    #region Print Console
+
+    private static void PrintGeracoes(int geracao, Cromossomo melhorIndividuo, string itensEscolhidos)
+    {
+        if (melhorIndividuo.Compatibilidade == 0)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("{0,-10} {1,-10} {2}", "|" + (geracao + 1) + "|", "|" + "Excedeu " + "|", "|" + itensEscolhidos + "|");
+            Console.ResetColor();
+        }
+        else
+        {
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine("{0,-10} {1,-10} {2}", "|" + (geracao + 1) + "|", "|" + melhorIndividuo.Compatibilidade + "|", "|" + itensEscolhidos + "|");
+            Console.ResetColor();
+        }
+    }
+
+    private static void MostrarCabecalho()
+    {
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine("------------------------------------------------------------------------------------------------------");
+        Console.WriteLine("{0,-10} {1,-10} {2}", "|Geração|", "|Valor|", "|Itens|");
+        Console.WriteLine("------------------------------------------------------------------------------------------------------");
+        Console.ResetColor();
+    }
+    #endregion
 }
