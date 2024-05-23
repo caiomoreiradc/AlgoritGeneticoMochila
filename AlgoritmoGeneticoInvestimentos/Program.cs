@@ -1,25 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
-
-partial class Program
+﻿partial class Program
 {
     static Random random = new Random();
     static int tamanhoPopulacao = 10;
-    static int geracaoLimite = 1;
+    static int geracaoLimite = 30;
     static int capacidadeMochila = 300;
+    static double taxaMutacao = 0.01;
+    static int elitismoContagem = 2;
 
     static List<Item> items = new List<Item>()
     {
-        new Item("Caderno", 40, 150),
-        new Item("Notebook", 200, 300),
-        new Item("Penal", 10, 200),
-        new Item("Caderno2", 40, 150),
-        new Item("Caderno3", 40, 150)
+        new Item("Agenda", 40, 20),
+        new Item("Notebook", 200, 30),
+        new Item("Penal", 20, 25),
+        new Item("Caderno", 40, 15),
+        new Item("Régua", 15, 10)
     };
 
     static void Main(string[] args)
     {
         List<Cromossomo> populacao = IniciarPopulacao();
+
+        // Cabeçalho 
+        MostrarCabecalho();
 
         for (int geracao = 0; geracao < geracaoLimite; geracao++)
         {
@@ -28,15 +30,23 @@ partial class Program
                 Validar(cromossomo);
             }
 
-            Cromossomo melhorIndividuo = populacao.OrderByDescending(c => c.Compatibilidade).First();
-            Console.WriteLine($"Geração {geracao + 1}: Mais compatível = {melhorIndividuo.Compatibilidade}");
+            List<Cromossomo> novaPopulacao = new List<Cromossomo>();
 
+            // elitismo
+            List<Cromossomo> melhoresIndividuos = populacao
+                .OrderByDescending(c => c.Compatibilidade)
+                .Take(elitismoContagem)
+                .ToList();
 
-            for (int i = 0; i < 4; i++)
+            novaPopulacao.AddRange(melhoresIndividuos);
+
+            // cruzamento aleatório
+            while (novaPopulacao.Count < tamanhoPopulacao)
             {
                 int indice1 = random.Next(tamanhoPopulacao);
                 int indice2 = random.Next(tamanhoPopulacao);
-                while (indice2 == indice1) 
+
+                while (indice2 == indice1) //verificar os indices
                 {
                     indice2 = random.Next(tamanhoPopulacao);
                 }
@@ -44,14 +54,50 @@ partial class Program
                 Cromossomo pai1 = populacao[indice1];
                 Cromossomo pai2 = populacao[indice2];
 
-                Cruzamento(pai1, pai2);
+                List<Cromossomo> filhos = Cruzamento(pai1, pai2);
+
+                // Adicionar na população
+                foreach (var filho in filhos)
+                {
+                    if (novaPopulacao.Count < tamanhoPopulacao)
+                    {
+                        novaPopulacao.Add(filho);
+                    }
+                }
+            }
+
+            populacao = novaPopulacao;
+
+            Cromossomo melhorIndividuo = populacao.OrderByDescending(c => c.Compatibilidade).First();
+            string itensEscolhidos = ObterItensEscolhidos(melhorIndividuo);
+
+            if (melhorIndividuo.Compatibilidade == 0)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("{0,-10} {1,-10} {2}", "|" + (geracao + 1) + "|", "|" + "Excedeu" + "|", "|" + itensEscolhidos + "|");
+                Console.ResetColor();
+            }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine("{0,-10} {1,-10} {2}", "|" + (geracao + 1) + "|", "|" + melhorIndividuo.Compatibilidade + "|", "|" + itensEscolhidos + "|");
+                Console.ResetColor();
             }
         }
     }
 
+    private static void MostrarCabecalho()
+    {
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine("------------------------------------------------------------------------------------------------------");
+        Console.WriteLine("{0,-10} {1,-10} {2}", "|Geração|", "|Valor|", "|Itens|");
+        Console.WriteLine("------------------------------------------------------------------------------------------------------");
+        Console.ResetColor();
+    }
+
     static List<Cromossomo> IniciarPopulacao()
     {
-        List<Cromossomo> population = new List<Cromossomo>();
+        List<Cromossomo> population = new List<Cromossomo>(); //lista da população
 
         for (int i = 0; i < tamanhoPopulacao; i++)
         {
@@ -89,26 +135,54 @@ partial class Program
             }
         }
 
+        // calcular os cromossomos que passam da cappacidade da mochila
         if (pesoTotal > capacidadeMochila)
         {
             cromossomo.Compatibilidade = 0;
         }
         else
         {
-            cromossomo.Compatibilidade = pesoTotal <= capacidadeMochila ? valorTotal : 0;
+            cromossomo.Compatibilidade = valorTotal;
         }
     }
 
-    static void Cruzamento(Cromossomo pai1, Cromossomo pai2)
+    static List<Cromossomo> Cruzamento(Cromossomo pai1, Cromossomo pai2)
     {
-        int pontoCorte = random.Next(pai1.Genes.Count); 
+        int pontoCorte = random.Next(pai1.Genes.Count);
 
-        for (int i = pontoCorte; i < pai1.Genes.Count; i++)
+        List<bool> genesFilho1 = new List<bool>();
+        List<bool> genesFilho2 = new List<bool>();
+
+        for (int i = 0; i < pai1.Genes.Count; i++)
         {
-            bool temp = pai1.Genes[i];
-            pai1.Genes[i] = pai2.Genes[i];
-            pai2.Genes[i] = temp;
+            if (i < pontoCorte)
+            {
+                genesFilho1.Add(pai1.Genes[i]);
+                genesFilho2.Add(pai2.Genes[i]);
+            }
+            else
+            {
+                genesFilho1.Add(pai2.Genes[i]);
+                genesFilho2.Add(pai1.Genes[i]);
+            }
         }
+
+        Cromossomo filho1 = new Cromossomo { Genes = genesFilho1 };
+        Cromossomo filho2 = new Cromossomo { Genes = genesFilho2 };
+
+        return new List<Cromossomo> { filho1, filho2 };
     }
 
+    static string ObterItensEscolhidos(Cromossomo cromossomo)
+    {
+        List<string> itensEscolhidos = new List<string>();
+        for (int i = 0; i < cromossomo.Genes.Count; i++)
+        {
+            if (cromossomo.Genes[i])
+            {
+                itensEscolhidos.Add(items[i].Nome + " (Valor: " + items[i].Valor + ")");
+            }
+        }
+        return string.Join(", ", itensEscolhidos);
+    }
 }
